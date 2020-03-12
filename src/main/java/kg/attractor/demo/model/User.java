@@ -1,34 +1,36 @@
 package kg.attractor.demo.model;
 
+import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
-@Document
+@Document(collection="users")
+@Data
+@CompoundIndex(def = "{'name': 1, 'email': 1}")
 public class User {
-    private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-    private static final Random r = new Random();
-
-    private static String generateId() {
-        return LocalDateTime.now().format(dtf) + r.nextInt();
-    }
-
-    @Id
-    private String id = generateId();
-    private String userName;
+    @Id public String id;
+    private String name;
     private String email;
     private String password;
-    private int publicationsCount = 0;
-    private int subscribesCount = 0;
-    private int subscribersCount = 0;
+    public List<Post> posts = new ArrayList<>();
+    private int publications = 0;
+    private int subscriber = 0;
+    private int subscription = 0;
+    private int likes=0; //not sure for this statement here, maybe will transfer to another class
 
-    public User(String userName, String email, String password) {
-        this.userName = userName;
+
+    public User(String id, String name, String email, List<Post> posts) {
+        this.id = id;
+        this.name = name;
         this.email = email;
-        this.password = password;
+        this.posts = posts;
+    }
+
+    public User ( String max, String s, String s1 ) {
     }
 
     public String getId() {
@@ -39,12 +41,12 @@ public class User {
         this.id = id;
     }
 
-    public String getUserName() {
-        return userName;
+    public String getName() {
+        return name;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {
@@ -55,35 +57,40 @@ public class User {
         this.email = email;
     }
 
-    public String getPassword() {
-        return password;
+    public int getPublications() {
+        return publications;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPublications(int publications) {
+        this.publications = publications;
     }
 
-    public int getPublicationsCount() {
-        return publicationsCount;
+    public int getSubscriber() {
+        return subscriber;
     }
 
-    public void setPublicationsCount(int publicationsCount) {
-        this.publicationsCount = publicationsCount;
+    public void setSubscriber(int subscriber) {
+        this.subscriber = subscriber;
     }
 
-    public int getSubscribesCount() {
-        return subscribesCount;
+    public int getSubscription() {
+        return subscription;
     }
 
-    public void setSubscribesCount(int subscribesCount) {
-        this.subscribesCount = subscribesCount;
+    public void setSubscription(int subscription) {
+        this.subscription = subscription;
     }
 
-    public int getSubscribersCount() {
-        return subscribersCount;
+    public int getLikes() {
+        return likes;
     }
 
-    public void setSubscribersCount(int subscribersCount) {
-        this.subscribersCount = subscribersCount;
+    public void setLikes(int likes) {
+        this.likes = likes;
+    }
+
+
+
+    public void likes() {
     }
 }
