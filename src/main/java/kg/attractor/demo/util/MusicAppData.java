@@ -45,7 +45,7 @@ public class MusicAppData {
                 new Album("2", "Nice", null, null, null)};
     }
 
-    @Bean
+
     CommandLineRunner initSong( SongRepo songRepo) {
         songRepo.deleteAll();
         return (args) -> Stream.of(songs())

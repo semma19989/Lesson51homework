@@ -35,7 +35,7 @@ public class UserController {
     public User createUser( @RequestBody User user) {
 
         // merge
-        User userN = userRepo.findById(user.id).orElse((kg.attractor.demo.model.User) User);
+        kg.attractor.demo.model.User userN = userRepo.findById(user.id).orElse((kg.attractor.demo.model.User) User);
         for (Post t : user.posts) {
             if (userN.posts.stream().filter(x -> {
                 return Objects.equals(x.id, t.id);
