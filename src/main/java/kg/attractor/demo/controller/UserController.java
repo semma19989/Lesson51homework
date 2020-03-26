@@ -1,71 +1,91 @@
 package kg.attractor.demo.controller;
 
-
-
-import kg.attractor.demo.model.Post;
-import kg.attractor.demo.model.User;
-import kg.attractor.demo.repository.PostRepo;
-import kg.attractor.demo.repository.UserRepo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.ui.Model;
+import kz.attractorschool.microgram.annotations.ApiPageable;
+import kz.attractorschool.microgram.dto.PostDTO;
+import kz.attractorschool.microgram.dto.UserDTO;
+import kz.attractorschool.microgram.model.User;
+import kz.attractorschool.microgram.service.PostService;
+import kz.attractorschool.microgram.service.UserService;
+import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 @RestController
+@RequestMapping("/users")
+@AllArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserRepo userRepo;
+    private final UserService userService;
+    private final PostService postService;
 
-    @Autowired
-    private PostRepo postRepo;
-    private Object User;
-
-    @GetMapping("/user/all")
-    public String root(Model model) {
-        model.addAttribute("user", userRepo.findAll());
-        return "user";
+    @ApiPageable
+    @GetMapping
+    public Slice<UserDTO> findUsers(@ApiIgnore Pageable pageable) {
+        return userService.findUsers(pageable);
     }
 
-
-    @PostMapping("/user")
-    public User createUser( @RequestBody User user) {
-
-        // merge
-        kg.attractor.demo.model.User userN = userRepo.findById(user.id).orElse((kg.attractor.demo.model.User) User);
-        for (Post t : user.posts) {
-            if (userN.posts.stream().filter(x -> {
-                return Objects.equals(x.id, t.id);
-            }).count() == 0)
-                userN.posts.add(t);
-        }
-
-        // save
-        List<Post> tasks = userN.posts;
-        for (Post t : tasks)
-            postRepo.save(t);
-
-        userRepo.save(userN);
-
-        return userN;
+    @ApiPageable
+    @GetMapping("/user/posts")
+    public Page<PostDTO> findPostsByEmail(@ApiIgnore Pageable pageable, Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return postService.findPostsByEmail(pageable, user.getEmail());
     }
 
-    @DeleteMapping("/user/{id}")
-    public Optional<User> deleteUser(@PathVariable String id) {
-        Optional<User> user = userRepo.findById(id);
-        userRepo.deleteById(id);
-
-        return user;
+    @ApiPageable
+    @GetMapping("/others")
+    public Slice<UserDTO> findOtherUsers(@ApiIgnore Pageable pageable, Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return userService.findOtherUsers(pageable, user.getUsername());
     }
 
-    @GetMapping("/user/{id}")
-    public Optional<User> getUser(@PathVariable String id) {
-        Optional<User> user = userRepo.findById(id);
-
-        return user;
+    @GetMapping("/explore")
+    public List<PostDTO> findOtherPosts(@ApiIgnore Pageable pageable, Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return userService.findOtherPosts(pageable, user.getUsername());
     }
 
+    @GetMapping("/story")
+    public List<PostDTO> findPostsBasedFollowings(@ApiIgnore Pageable pageable, Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return userService.findPostsBasedFollowings(pageable, user.getEmail());
+    }
+
+    @GetMapping("/username")
+    public UserDTO findUserByUsername(Authentication authentication) {
+        String username = authentication.getName();
+        return userService.findUserByUsername(username);
+    }
+
+    @GetMapping("/email/")
+    public UserDTO findUserByEmail(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return userService.findUserByEmail(user.getEmail());
+    }
+
+    @GetMapping("/email/exist")
+    public String existUserByEmail(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return userService.existsUserByEmail(user.getEmail());
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public UserDTO addUser(@RequestBody UserDTO userData) {
+        return userService.addUser(userData);
+    }
+
+    @DeleteMapping("/username")
+    public ResponseEntity<Void> deleteUser(Authentication authentication) {
+        String username = authentication.getName();
+        if (userService.deleteUser(username))
+            return ResponseEntity.noContent().build();
+        return ResponseEntity.notFound().build();
+    }
 }

@@ -1,38 +1,53 @@
 package kg.attractor.demo.service;
 
 
+import kg.attractor.demo.dto.PostDTO;
 import kg.attractor.demo.dto.UserDTO;
 import kg.attractor.demo.exception.ResourceNotFoundException;
+import kg.attractor.demo.model.Post;
+import kg.attractor.demo.model.Subscription;
 import kg.attractor.demo.model.User;
+import kg.attractor.demo.repository.PostRepo;
+import kg.attractor.demo.repository.SubscriptionRepo;
 import kg.attractor.demo.repository.UserRepo;
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 @Service
-public class UserService {
+@AllArgsConstructor
+public class UserService implements UserDetailsService {
 
     private final UserRepo userRepo;
-
-    public UserService(UserRepo userRepo) {
-        this.userRepo = userRepo;
-    }
+    private final PostRepo postRepo;
+    private final SubscriptionRepo subscriptionRepo;
 
     public Slice<UserDTO> findUsers(Pageable pageable) {
         Page<User> slice = userRepo.findAll(pageable);
+        updateNumbers(slice);
         return slice.map(UserDTO::from);
     }
 
     public UserDTO findUserByUsername(String username) {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Can't find user with the name: " + username));
+        updateNumbers(user);
         return UserDTO.from(user);
     }
 
     public UserDTO findUserByEmail(String email) {
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Can't find user with the email: " + email));
+        updateNumbers(user);
         return UserDTO.from(user);
     }
 
@@ -46,21 +61,54 @@ public class UserService {
 
     public Slice<UserDTO> findOtherUsers(Pageable pageable, String username) {
         Page<User> slice = userRepo.findAllByUsernameNotContains(pageable, username);
+        updateNumbers(slice);
         return slice.map(UserDTO::from);
     }
 
+    public List<PostDTO> findOtherPosts(Pageable pageable, String username) {
+        Page<User> users = userRepo.findAllByUsernameNotContains(pageable, username);
+        Page<Post> posts = postRepo.findAll(pageable);
+
+        List<Post> newPosts = new ArrayList<>();
+        for (User user : users) {
+            for (Post post : posts) {
+                if (user.getEmail().equals(post.getUser().getEmail())) {
+                    newPosts.add(post);
+                }
+            }
+        }
+
+        return newPosts.stream().map(PostDTO::from).collect(Collectors.toList());
+    }
+
+    public List<PostDTO> findPostsBasedFollowings(Pageable pageable, String email) {
+
+        Page<Post> posts = postRepo.findAll(pageable);
+        Page<Subscription> subscriptions = subscriptionRepo.findAllByFollowerEmail(pageable, email);
+
+        List<Post> newPosts = new ArrayList<>();
+
+        for (Post post : posts) {
+            for (Subscription subscription : subscriptions) {
+                if (post.getUser().getEmail().equals(subscription.getFollowing().getEmail())) {
+                    newPosts.add(post);
+                }
+            }
+        }
+
+
+        return newPosts.stream().map(PostDTO::from).collect(Collectors.toList());
+    }
+
+
     public UserDTO addUser(UserDTO userData) {
         User user = User.builder()
-                .id(userData.getId())
                 .username(userData.getUsername())
                 .email(userData.getEmail())
                 .password(userData.getPassword())
                 .numOfPosts(userData.getNumOfPosts())
                 .numOfFollowers(userData.getNumOfFollowers())
                 .numOfFollowings(userData.getNumOfFollowings())
-                .posts(userData.getPosts())
-                .followers(userData.getFollowers())
-                .followings(userData.getFollowings())
                 .build();
 
         userRepo.save(user);
@@ -72,4 +120,25 @@ public class UserService {
         return true;
     }
 
+    private void updateNumbers(Iterable<User> users) {
+        users.forEach(user -> {
+            user.setNumOfPosts(postRepo.countByUserEmail(user.getEmail()));
+            user.setNumOfFollowers(subscriptionRepo.countByFollowingEmail(user.getEmail()));
+            user.setNumOfFollowings(subscriptionRepo.countByFollowerEmail(user.getEmail()));
+        });
+    }
+
+    private void updateNumbers(User user) {
+        user.setNumOfPosts(postRepo.countByUserEmail(user.getEmail()));
+        user.setNumOfFollowers(subscriptionRepo.countByFollowingEmail(user.getEmail()));
+        user.setNumOfFollowings(subscriptionRepo.countByFollowerEmail(user.getEmail()));
+    }
+
+    @Override
+    public User loadUserByUsername(String email) throws UsernameNotFoundException {
+        Optional<User> optUser = userRepo.findByEmail(email);
+        if (optUser.isEmpty())
+            throw new UsernameNotFoundException("Not found");
+        return optUser.get();
+    }
 }

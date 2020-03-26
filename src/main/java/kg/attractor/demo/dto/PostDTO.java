@@ -1,11 +1,9 @@
 package kg.attractor.demo.dto;
 
-
-import kg.attractor.demo.model.Post;
-import kg.attractor.demo.repository.LikeRepository;
+import kz.attractorschool.microgram.model.Post;
 import lombok.*;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
 @Builder(access = AccessLevel.PRIVATE)
@@ -16,7 +14,8 @@ public class PostDTO {
     private String image;
     private String description;
     private int numOfLikes;
-    private List<LikeRepository.Like> likes;
+    private int numOfComments;
+    private LocalDateTime dateTime;
 
     public static PostDTO from(Post post) {
         return builder()
@@ -24,7 +23,8 @@ public class PostDTO {
                 .image(post.getImage())
                 .description(post.getDescription())
                 .numOfLikes(post.getNumOfLikes())
-                .likes(post.getLikes())
+                .numOfComments(post.getNumOfComments())
+                .dateTime(post.getDateTime())
                 .build();
     }
 }

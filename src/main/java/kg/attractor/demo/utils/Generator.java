@@ -1,4 +1,4 @@
-package kg.attractor.demo.util;
+package kg.attractor.demo.utils;
 
 import lombok.var;
 
@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Generator {
-    static final Pattern removeExtra = Pattern.compile("[.,;]+?");
     private static final List<String> loremWords;
     private static final Random r = new Random();
 
@@ -40,6 +39,16 @@ public final class Generator {
         return makeGibberish(20, 10);
     }
 
+    static final Pattern removeExtra = Pattern.compile("[.,;]+?");
+
+    public static String makeName() {
+        return makeGibberish(3, 2);
+    }
+
+    private static String takeOneWord() {
+        return loremWords.get(r.nextInt(loremWords.size()));
+    }
+
     private static String makeGibberish(int randomAmount, int min) {
         if (randomAmount <= 0) {
             randomAmount = 1;
@@ -51,24 +60,16 @@ public final class Generator {
         }
         var gibberish = Stream.generate(Generator::takeOneWord).limit(wordCount).collect(Collectors.joining(" ")).strip();
         gibberish = Character.toUpperCase(gibberish.charAt(0)) + gibberish.substring(1);
-        if (((String) gibberish).endsWith(",")) {
-            gibberish = ((String) gibberish).substring(0, gibberish.length() - 2);
+        if (gibberish.endsWith(",")) {
+            gibberish = gibberish.substring(0, gibberish.length() - 2);
         }
         return gibberish.endsWith(".") ? gibberish : gibberish + ".";
     }
 
-    public static String makeName() {
-        return makeGibberish(3, 2);
-    }
-
-    private static String takeOneWord() {
-        return loremWords.get(r.nextInt(loremWords.size()));
-    }
-
     public static String makeEmail() {
-        String prefix = removeExtra.matcher(makeGibberish(2, 0)).replaceAll("").toLowerCase();
-        String suffix = removeExtra.matcher(makeGibberish(2, 0)).replaceAll("").toLowerCase();
-        String email = prefix + "@" + suffix;
+        var prefix = removeExtra.matcher(makeGibberish(2, 0)).replaceAll("").toLowerCase();
+        var suffix = removeExtra.matcher(makeGibberish(2, 0)).replaceAll("").toLowerCase();
+        var email = prefix + "@" + suffix;
         return email.replace(" ", "");
     }
 

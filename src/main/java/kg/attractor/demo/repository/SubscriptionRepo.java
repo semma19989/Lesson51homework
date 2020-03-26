@@ -1,10 +1,15 @@
 package kg.attractor.demo.repository;
 
 
+import kg.attractor.demo.model.Subscription;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
-import kg.attractor.demo.model.SubscriptionModel;
-import org.springframework.data.repository.CrudRepository;
+public interface SubscriptionRepo extends PagingAndSortingRepository<Subscription, String> {
+    int countByFollowerEmail(String email);
 
-public interface SubscriptionRepo extends CrudRepository<SubscriptionModel, String> {
+    int countByFollowingEmail(String email);
 
+    Page<Subscription> findAllByFollowerEmail(Pageable pageable, String email);
 }

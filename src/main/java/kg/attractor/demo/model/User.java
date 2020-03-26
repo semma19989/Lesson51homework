@@ -3,106 +3,69 @@ package kg.attractor.demo.model;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
 @Document(collection = "users")
 @Data
-public class User {
+public class User implements UserDetails {
     public static final User EMPTY = new User("No one", "none@gmail.com", "nothing");
-    private static final List<User> users = makeUsers();
-    @Id
-    private final String id;
+
     @Indexed
     private final String username;
-    @Indexed
+    @Id
     private final String email;
     private final String password;
-    @DBRef
-    private final List<User> followings = new ArrayList<>();
-    @DBRef
-    private final List<User> followers = new ArrayList<>();
-    private int numOfPosts = 0;
+    private final int numOfPosts = 0;
     private int numOfFollowers;
     private int numOfFollowings;
-    @DBRef
-    private List<Post> posts = new ArrayList<>();
 
     public User(String username, String email, String password) {
-        this.id = UUID.randomUUID().toString();
         this.username = username;
         this.email = email;
         this.password = password;
-        this.numOfPosts = getPosts().size();
-        this.numOfFollowers = getFollowers().size();
-        this.numOfFollowings = getFollowings().size();
     }
 
-    private static List<User> makeUsers() {
-        List<User> users = new LinkedList<>();
-        users.add(new User("w", "w@gmail.com", "w"));
-        users.add(new User("d", "d@gmail.com", "d"));
-        users.add(new User("f", "f@gmail.com", "f"));
-        users.add(new User("bg", "bd@gmail.com", "bg"));
-        users.add(new User("sn", "sn@gmail.com", "sn"));
-        return users;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("FULL"));
     }
 
-    public static List<User> getUsers() {
-        return users;
+    @Override
+    public String getPassword() {
+        return null;
     }
 
-    public static void subscribe(int follower, int following) {
-        User.getUsers().get(following).addFollowers(User.getUsers().get(follower));
-        User.getUsers().get(follower).addFollowings(User.getUsers().get(following));
+    @Override
+    public String getUsername() {
+        return null;
     }
 
-    private Collection<Object> getFollowers() {
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
     }
 
-    public void addPost(Post newPost) {
-        getPosts().add(newPost);
-        setPosts(getPosts());
-        updateNumOfPosts();
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
     }
 
-    public void addFollowers(User follower) {
-        getFollowers().add(follower);
-        setFollowers(getFollowers());
-        updateNumOfFollowers();
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
     }
 
-    public void addFollowings(User following) {
-        getFollowings().add(following);
-        setFollowings(getFollowings());
-        updateNumOfFollowings();
-    }
-
-    public void updateNumOfPosts() {
-        this.numOfPosts = getPosts().size();
-    }
-
-    public void updateNumOfFollowers() {
-        this.numOfFollowers = getFollowers().size();
-    }
-
-    public void updateNumOfFollowings() {
-        this.numOfFollowings = getFollowings().size();
-    }
-
-    public List<Post> getPosts() {
-        return posts;
-    }
-
-    public void setPosts(List<Post> posts) {
-        this.posts = posts;
-    }
-
-    public Object getUsername() {
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }
